@@ -1,0 +1,49 @@
+		AREA Cardinality, CODE, READONLY
+		IMPORT main
+		EXPORT start
+
+start
+		ldr r0, =val_set		;load the address of the set to be tested
+		ldr r1, =unq_val		;load the address of unique set
+		ldr r3, =0				;loop count
+		mov r4, r0				;copy r0 to r4
+		ldr r10, =0				;0 flag, see if a 0 is added
+		ldr r12, =0 			;cardinality count
+loop	cmp r4, r1				;check if at end of val_set
+		beq fin					;if at end, finish
+		stmfd sp!, {r1-r3}		;store values to stack, not to be changed
+		bl check				;call subroutine
+		add r3, #1				;update loop count, spaces to traverse val_set
+		b  loop					;loop again
+fin		mov r0, r12				;store cardinality count in r0, as required
+stop 	b	stop				;end of program
+check	
+		ldr r2, =2				;set r2 = 2, for multiplication
+		mul r3, r2, r3			;r3 (loop count), times 2, to find offset 
+		ldrb r2, [r0, r3]		;get value (with appropriate offset) of val_set
+		add r4, r3, r0			;r0 is not changed, r4 is to determine end of val_set
+wh_c	ldrb r3, [r1], #2		;get element of unq_val
+		cmp r3, r2				;see if element is in unq_val
+		cmpeq r2, #0			;if the number is 0
+		cmpeq r10, #0			;if we have not added 0
+		addeq r10, #1			;if 0 not added, set flag to 1 (will not add another 0)
+		beq add_to				;add the 0 to unq_val
+		cmp r3, r2				;else check if the number is in unq_val (again)
+		beq break				;if the number is in unq_val
+		cmp r3, #0				;is the current space 0?
+		ldrbeq r3, [r1, #2]		;get the next element of unq_val
+		cmpeq r3, #0			;is the next space 0?
+		beq add_to				;yes, at end of list, append current element
+		b wh_c					;else, back to top of loop
+break	ldmfd sp!, {r1-r3}		;restore registers
+		bx lr					;return (leave subroutine)
+add_to	strb r2, [r1, #-2]		;add new element to unq_val
+		add r12, #1				;increase cardinality count
+		b break					;leave
+
+		AREA Sets, DATA, READWRITE
+val_set DCW 4, 9, 3, 4, 7, 9, 12, 10, 4, 7, 3, 12, 5, 5, 7, 0			
+;val_set DCW 0, 0, 0	
+unq_val	SPACE 4	
+	
+	END

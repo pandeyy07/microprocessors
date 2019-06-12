@@ -1,0 +1,50 @@
+	AREA	ASCIItoDecimal, CODE, READONLY
+	IMPORT	main
+	EXPORT	start
+		
+start
+		ldr r0, =ascii_str					;the location in memory of the ASCII string
+		ldrb r1, [r0], #1					;load the first byte of the ASCII string and post increment the location pointer
+		ldr r2, =dec_str					;load the memory location to store the decimal number
+		ldr r12, =0;						;flag to check if number should be negative (2s complement), make 0
+		and r3, r1, #0xff					;mask to ensure reading of relevant bits
+		cmp r3, #'-'						;compare to see if number should be negated (2s complement)
+		addeq r12, #0x1						;only add 1 if first char is '-'
+loop										;main loop of program
+		cmp r3, #0							;check if r3 (masked read in character) is NULL
+		beq break							;if NULL, break out of loop
+		cmp r3, #'0'						;check if less than '0' (#0x30)
+		blo skip							;if less than ASCII zero, skip to next chracter
+		cmp r3, #'9'						;check if greater than '9' (#0x39)
+		bhi skip							;if greater than ASCII nine, skip to next chracter
+		sub r3, #'0'						;take away '0', to make decimal
+		ldr r4, [r2]						;load value stored in r2 (count)
+		mov r5, #0xA						;make r5 (decimal) 10, for incrementing count
+		mul r4, r5, r4						;multiply count by 10, for incrementing
+		add r4, r3							;add the new number to the count
+		str r4, [r2]						;store the count back in r2
+skip	ldrb r1, [r0], #1					;load the next character
+		and r3, r1, #0xff					;mask to ensure reading of relevant bits
+		b loop								;top of main loop
+break	cmp r12, #1							;check if flag is one, requiring 2s complement
+		stmfdeq sp!, {r0-r2,r12,lr}			;if flag is 1, store registers on the stack
+		bleq compl							;branch to 2s complement subroutine (if equal)
+		
+stop	B	stop							;infinite loop (end of program)
+compl										;2s complement subroutine
+		ldr r3, [r2]						;load value (count) at r2 into r3
+		mov r12, #0xffffffff				;mask for flipping all bits (32)
+		eor r3, r12							;flip all bits in count (r3)
+		adds r3, #1							;add 1 to flipped bits (as per 2s complement)
+		str r3, [r2]						;store the new count value in r2
+		ldmfd sp!, {r0-r2,r12,pc}			;restore the registers from the stack
+		bx lr								;branch and return to the main program
+
+
+	AREA	ASCII_string, DATA, READONLY
+ascii_str	DCB		"-34",0					;byte aligned memory, NULL terminated
+
+	AREA	Decimal_string, DATA, READWRITE
+dec_str		SPACE	4						;32 bits of memory, for storing decimal number
+	
+	END

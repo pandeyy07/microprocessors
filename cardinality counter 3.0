@@ -1,0 +1,37 @@
+	AREA	FirstProgram, CODE, READONLY
+	IMPORT	main
+	EXPORT	start
+
+start
+		MOV 	R0, #0
+		LDR 	R11, = array	; array of numbers
+		MOV 	R3, R3, #4
+		MOV 	R8, #0
+		LDR		R1, [R11, R3]
+		ADD		R3, R3, #4
+		ADD 	R8, R8, #1
+		ADD 	R0, R0, #1
+	
+TRAVERSE
+		LDR		R1, [R11, R3]
+		ADD		R3, R3, #4
+		ADD 	R8, R8, #1
+REVERSE 
+		MOV 	R5, R3
+		SUB 	R5, R5, #4
+		LDR 	R7, [R11, #5]
+		CMP 	R7, R1
+		BEQ 	OLD
+		CMP 	R5, #0 	
+		BNE		REVERSE 
+	
+		ADD 	R0, R0, #1
+		
+OLD  	
+		CMP 	R8, #15
+		BNE 	TRAVERSE 
+	
+stop	B	stop
+	
+array	DCD		4, 9, 3, 4, 7, 9, 12, 10, 4, 7, 3, 12, 5, 5, 7
+		END
